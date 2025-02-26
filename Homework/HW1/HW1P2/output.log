@@ -1,0 +1,11 @@
+Batch shape: torch.Size([512, 61, 28])
+3778
+2384
+42016
+
+Expected shape: (512, 61, 28)
+Checkpoint from epoch: 18
+Validation accuracy: 0.82%
+Model in memory: True
+Data loaders: True True
+Device: True

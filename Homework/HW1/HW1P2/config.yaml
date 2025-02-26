@@ -1,0 +1,67 @@
+_wandb:
+    value:
+        cli_version: 0.19.5
+        m: []
+        python_version: 3.11.11
+        t:
+            "1":
+                - 1
+                - 5
+                - 53
+                - 55
+                - 105
+            "2":
+                - 1
+                - 5
+                - 53
+                - 55
+                - 105
+            "3":
+                - 2
+                - 3
+                - 13
+                - 16
+                - 23
+                - 24
+                - 55
+            "4": 3.11.11
+            "5": 0.19.5
+            "8":
+                - 1
+                - 2
+                - 5
+                - 12
+            "12": 0.19.5
+            "13": linux-x86_64
+Name:
+    value: hy8888
+activations:
+    value: ReLU
+archetype:
+    value: pyramid
+augmentations:
+    value: Both
+batch_size:
+    value: 512
+context:
+    value: 30
+dropout:
+    value: 0.3
+epochs:
+    value: 30
+freq_mask_param:
+    value: 4
+learning_rate:
+    value: 0.001
+optimizers:
+    value: AdamW
+scheduler:
+    value: ReduceLROnPlateau
+subset:
+    value: 0.6
+time_mask_param:
+    value: 8
+weight_decay:
+    value: 0.01
+weight_initialization:
+    value: null
