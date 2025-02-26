@@ -101,18 +101,19 @@ class CNN(object):
         # Save output (necessary for error and loss)
         self.Z = A
         Z = A
+        
+        # Pass through convolutional layers and activations
         for i in range(self.nlayers):
-            # first conv forward, then activations.forward, get new Z
-            conv_output = self.convolutional_layers[i].forward(conv_output)
-            act_output = self.activations[i].forward(conv_output)
-            conv_output = act_output
+            # First conv forward, then activations.forward
+            Z = self.convolutional_layers[i].forward(Z)
+            Z = self.activations[i].forward(Z)
         
-        flat_out=self.flatten.forward(conv_output)
+        Z = self.flatten.forward(Z)
         
-        linear_out=self.linear_layer.forward(flat_out)
+        Z = self.linear_layer.forward(Z)
         
-        # keep the final output, to calc loss
-        self.Z=linear_out
+        # Save the final output for loss calculation
+        self.Z = Z
 
         return self.Z
 

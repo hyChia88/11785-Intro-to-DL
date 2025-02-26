@@ -47,15 +47,21 @@ class Conv2d_stride1():
         # init Z
         Z = np.zeros((N,C_out,H_out, W_out))
 
-        # Convolution: W as the filter, b as bias, output Z should be N,C_out,H_out,W_out
-        for n in range(N): # for all batch
-            for c in range(C_out):
-                for i in range(H_out):
-                    for j in range(W_out):
-                        # window
-                        win = A[n,:,i:i+k,j:j+k]
-                        Z[n, c, i, j] = np.sum(win * self.W[c]) + self.b[c] # win * self.W[c] not matrix multi @
+        # # Convolution: W as the filter, b as bias, output Z should be N,C_out,H_out,W_out
+        # for n in range(N): # for all batch
+        #     for c in range(C_out):
+        #         for i in range(H_out):
+        #             for j in range(W_out):
+        #                 # window
+        #                 win = A[n,:,i:i+k,j:j+k]
+        #                 Z[n, c, i, j] = np.sum(win * self.W[c]) + self.b[c] # win * self.W[c] not matrix multi @
 
+        # Optimized convolution using np.einsum
+        for i in range(H_out):
+            for j in range(W_out):
+                window = A[:, :, i:i+k, j:j+k]  # shape: (N, C_in, k, k)
+                Z[:, :, i, j] = np.einsum('nijk,oijk->no', window, self.W) + self.b[np.newaxis, :]
+                
         return Z
 
     def backward(self, dLdZ):
@@ -70,22 +76,30 @@ class Conv2d_stride1():
         _, _, k, k = self.W.shape
         
         # 1. find dLdb. dLdb as the sum of dLdZ **need to do  axis=(0, 2, 3) cuz b.shape is (C_out,)
-        self.dLdb = np.sum(dLdZ, axis=(0,2,3))
+        self.dLdb = np.einsum('nohw->o', dLdZ)
         
         # 2. find dLdW. basic rule: A * dLdZ = dLdW
         # init dLdW
         self.dLdW = np.zeros_like(self.W)
         
         # Conv
-        for n in range(N):
-            for c in range(C_out):
-                for h in range(H_out):
-                    for w in range(W_out):
-                        # get gradient
-                        grad = dLdZ[n,c,h,w]
-                        win = self.A[n,:, h:h+k, w:w+k]
-                        self.dLdW[c] += grad * win # matrix multiplication, output dLdW shouldbe [C_in, C_out, K, K]
+        # for n in range(N):
+        #     for c in range(C_out):
+        #         for h in range(H_out):
+        #             for w in range(W_out):
+        #                 # get gradient
+        #                 grad = dLdZ[n,c,h,w]
+        #                 win = self.A[n,:, h:h+k, w:w+k]
+        #                 self.dLdW[c] += grad * win # matrix multiplication, output dLdW shouldbe [C_in, C_out, K, K]
 
+        # Opti
+        for h in range(H_out):
+            for w in range(W_out):
+                # Extract window for all batches and input channels
+                window = self.A[:, :, h:h+k, w:w+k]  # shape: (N, C_in, k, k)
+                self.dLdW += np.einsum('no,nijk->oijk', dLdZ[:, :, h, w], window)
+                
+                
         # 3. find dLdA
         # 3.1 pad dLdZ[N,C_out,H_out,W_out] to k-1 at each edge
         dLdZ_pad = np.pad(dLdZ, ((0, 0), (0, 0), (k-1, k-1), (k-1, k-1)), mode='constant')
@@ -96,17 +110,24 @@ class Conv2d_stride1():
         # 3.3 get dLdA, dLdA = dLdZ_pad * W_flip
         # init dLdA
         dLdA = np.zeros_like(self.A)
-        for n in range(N):
-            for c_in in range(C_in):
-                for c_out in range(C_out):
-                    for h in range(H_in):
-                        for w in range(W_in):
-                            h_start = h
-                            w_start = w
-                            window = dLdZ_pad[n, c_out, h_start:h_start+k, w_start:w_start+k]
-                            # accumulate grad (+= but not =)
-                            dLdA[n, c_in, h, w] += np.sum(window * W_flip[c_out, c_in])
+        
+        # for n in range(N):
+        #     for c_in in range(C_in):
+        #         for c_out in range(C_out):
+        #             for h in range(H_in):
+        #                 for w in range(W_in):
+        #                     h_start = h
+        #                     w_start = w
+        #                     window = dLdZ_pad[n, c_out, h_start:h_start+k, w_start:w_start+k]
+        #                     # accumulate grad (+= but not =)
+        #                     dLdA[n, c_in, h, w] += np.sum(window * W_flip[c_out, c_in])
 
+        #opt
+        for h in range(H_in):
+            for w in range(W_in):
+                window = dLdZ_pad[:, :, h:h+k, w:w+k]  # shape: (N, C_out, k, k)
+                dLdA[:, :, h, w] = np.einsum('nohw,oihw->ni', window, W_flip)
+                
         return dLdA
 
 # stride != 1

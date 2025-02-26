@@ -47,22 +47,15 @@ class Conv2d_stride1():
         # init Z
         Z = np.zeros((N,C_out,H_out, W_out))
 
-        # # Convolution: W as the filter, b as bias, output Z should be N,C_out,H_out,W_out
-        # for n in range(N): # for all batch
-        #     for c in range(C_out):
-        #         for i in range(H_out):
-        #             for j in range(W_out):
-        #                 # window
-        #                 win = A[n,:,i:i+k,j:j+k]
-        #                 Z[n, c, i, j] = np.sum(win * self.W[c]) + self.b[c] # win * self.W[c] not matrix multi @
+        # Convolution: W as the filter, b as bias, output Z should be N,C_out,H_out,W_out
+        for n in range(N): # for all batch
+            for c in range(C_out):
+                for i in range(H_out):
+                    for j in range(W_out):
+                        # window
+                        win = A[n,:,i:i+k,j:j+k]
+                        Z[n, c, i, j] = np.sum(win * self.W[c]) + self.b[c] # win * self.W[c] not matrix multi @
 
-        # Opt
-        for h in range(H_out):
-            for w in range(W_out):
-                Z[:, :, h, w] = np.einsum('ncij,ocij->no', A[:, :, h:h+k, w:w+k], self.W)
-        
-        Z += self.b.reshape(1, C_out, 1, 1)
-        
         return Z
 
     def backward(self, dLdZ):
@@ -84,21 +77,14 @@ class Conv2d_stride1():
         self.dLdW = np.zeros_like(self.W)
         
         # Conv
-        # for n in range(N):
-        #     for c in range(C_out):
-        #         for h in range(H_out):
-        #             for w in range(W_out):
-        #                 # get gradient
-        #                 grad = dLdZ[n,c,h,w]
-        #                 win = self.A[n,:, h:h+k, w:w+k]
-        #                 self.dLdW[c] += grad * win # matrix multiplication, output dLdW shouldbe [C_in, C_out, K, K]
-        
-        for h in range(H_out):
-            for w in range(W_out):
-                win = self.A[:, :, h:h+k, w:w+k] 
-                grads = dLdZ[:, :, h, w] 
-                 # 'no,ncij->ocij': for each output channel (o) and input channel (c),
-                self.dLdW += np.einsum('no,ncij->ocij', grads, win)
+        for n in range(N):
+            for c in range(C_out):
+                for h in range(H_out):
+                    for w in range(W_out):
+                        # get gradient
+                        grad = dLdZ[n,c,h,w]
+                        win = self.A[n,:, h:h+k, w:w+k]
+                        self.dLdW[c] += grad * win # matrix multiplication, output dLdW shouldbe [C_in, C_out, K, K]
 
         # 3. find dLdA
         # 3.1 pad dLdZ[N,C_out,H_out,W_out] to k-1 at each edge
@@ -110,21 +96,16 @@ class Conv2d_stride1():
         # 3.3 get dLdA, dLdA = dLdZ_pad * W_flip
         # init dLdA
         dLdA = np.zeros_like(self.A)
-        # for n in range(N):
-        #     for c_in in range(C_in):
-        #         for c_out in range(C_out):
-        #             for h in range(H_in):
-        #                 for w in range(W_in):
-        #                     h_start = h
-        #                     w_start = w
-        #                     window = dLdZ_pad[n, c_out, h_start:h_start+k, w_start:w_start+k]
-        #                     # accumulate grad (+= but not =)
-        #                     dLdA[n, c_in, h, w] += np.sum(window * W_flip[c_out, c_in])
-        
-        for h in range(H_in):
-            for w in range(W_in):
-                win = dLdZ_pad[:, :, h:h+k, w:w+k] 
-                dLdA[:, :, h, w] = np.einsum('noij,ocij->nc', win, W_flip)
+        for n in range(N):
+            for c_in in range(C_in):
+                for c_out in range(C_out):
+                    for h in range(H_in):
+                        for w in range(W_in):
+                            h_start = h
+                            w_start = w
+                            window = dLdZ_pad[n, c_out, h_start:h_start+k, w_start:w_start+k]
+                            # accumulate grad (+= but not =)
+                            dLdA[n, c_in, h, w] += np.sum(window * W_flip[c_out, c_in])
 
         return dLdA
 
