@@ -1,4 +1,3 @@
-from turtle import forward
 from unittest import result
 import numpy as np
 import scipy.special as sp
@@ -64,7 +63,8 @@ class Tanh(Identity):
         super(Tanh, self).__init__()
 
     def forward(self, Z):
-        self.A = (np.exp(Z) - np.exp(-Z))/(np.exp(Z) + np.exp(-Z))
+        # self.A = (np.exp(Z) - np.exp(-Z))/(np.exp(Z) + np.exp(-Z))
+        self.A = np.tanh(Z)
         return self.A
 
     def backward(self, dLdA):

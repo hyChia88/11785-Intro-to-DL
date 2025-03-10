@@ -59,17 +59,17 @@ x = np.random.randn(batch_size, num_input_channels, input_width)
 
 #TODO: Uncomment and/or add print statements as you need them.
 
-# print("input shape: ", x.shape)
-# print("input: ", x)
+print("input shape: ", x.shape)
+print("input: ", x)
 
 y = model.forward(x)
 
-# print("Forward shape: ", y.shape)
-# print("Forward result: ", y)
+print("Forward shape: ", y.shape)
+print("Forward result: ", y)
 
 delta = np.ones(y.shape)
 
 dx = model.backward(delta)
 
-# print("Backward shape: ", dx.shape)
-# print("Backward result: ", dx)
+print("Backward shape: ", dx.shape)
+print("Backward result: ", dx)

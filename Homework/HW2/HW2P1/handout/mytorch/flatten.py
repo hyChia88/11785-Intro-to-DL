@@ -9,6 +9,7 @@ class Flatten():
         Return:
             Z (np.array): (batch_size, in_channels * in width)
         """
+        self.A = A # store A for backward pass
         # reshape Z from multiple to 1d, -1 as the num of size
         Z = A.reshape(A.shape[0],-1)
 
@@ -22,6 +23,6 @@ class Flatten():
             dLdA (np.array): (batch size, in channels, in width)
         """
         # reshape back to input shape
-        dLdA = dLdZ.reshape(self.input_shape)
+        dLdA = dLdZ.reshape(self.A.shape)
 
         return dLdA

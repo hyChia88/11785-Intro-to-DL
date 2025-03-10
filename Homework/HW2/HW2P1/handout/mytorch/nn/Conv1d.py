@@ -154,7 +154,7 @@ class Conv1d():
         Return:
             Z (np.array): (batch_size, out_channels, output_size)
         """
-        
+        self.A = A # store A for backward pass
         # 1. Pad the input appropriately using np.pad() function
         A_pad = np.pad(A, ((0, 0), (0, 0), (self.pad, self.pad)), mode='constant', constant_values=0)
 
