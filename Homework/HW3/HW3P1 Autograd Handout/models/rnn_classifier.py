@@ -19,7 +19,7 @@ class RNNPhonemeClassifier(object):
         self.autograd_engine = autograd_engine
 
         # TODO: Understand then uncomment this code :)
-        """
+
         self.rnn = [
             RNNCell(input_size, hidden_size, self.autograd_engine) if i == 0
             else RNNCell(hidden_size, hidden_size, self.autograd_engine)
@@ -27,7 +27,7 @@ class RNNPhonemeClassifier(object):
         ]
         
         self.output_layer = Linear(hidden_size, output_size, self.autograd_engine)
-        """
+
         # store hidden states at each time step, [(seq_len+1) * (num_layers) * (batch_size, hidden_size)]
         self.hiddens = []
 
@@ -105,8 +105,24 @@ class RNNPhonemeClassifier(object):
         #   Similar to above, append a copy of the current hidden array to the hiddens list
 
         # TODO
+        # MYNOTE: iter the everylayer i& every timestep
+        for t in range(seq_len):
+            x_t = x[:, t, :]
+            
+            for layer in range(self.num_layers):
+                if layer == 0:
+                    layer_input = x_t
+                else:
+                    layer_input = hidden[layer-1]
+                    
+                # update hidden layer
+                hidden[layer] = self.rnn[layer](layer_input, hidden[layer])
+            self.hiddens.append(hidden.copy())
 
         # Get the outputs from the last time step using the linear layer and return it
         # <--------------------------
         # return logits
-        raise NotImplementedError
+        # MYNOTE: logits, as the last layer of output
+        logits = self.output_layer(hidden[-1])
+        
+        return logits

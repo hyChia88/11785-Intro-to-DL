@@ -94,36 +94,107 @@ class Autograd:
 
         # TODO: Add all of the inputs to the self.gradient_buffer using the add_spot() function
         # This will allow the gradients to be tracked
+        for input in inputs:
+            self.gradient_buffer.add_spot(input)
+        # ??
+        # Also add the output to the gradient buffer
+        self.gradient_buffer.add_spot(output)
 
         # TODO: Append an Operation object to the self.operation_list
+        operation = Operation(
+            inputs=inputs,
+            output=output,
+            gradients_to_update=gradients_to_update,
+            backward_operation=backward_operation
+        )
+        self.operation_list.append(operation)
 
+    # def backward(self, divergence):
+    #     """
+    #     The backpropagation through the self.operation_list with a given divergence.
+    #     This function should automatically update gradients of parameters by checking
+    #     the gradients_to_update. Read the write up for further explanation
+    #     Args:
+    #         - divergence: loss value (float/double/int/long)
+    #     Returns:
+    #         No return required
+    #     """
+    #     # TODO: Iterate through the self.operation_list and propagate the gradients.
+    #     # NOTE: Make sure you iterate in the correct direction. How are gradients propagated?
+    #     for i, operation in enumerate(reversed(self.operation_list)):
+    #         # TODO: For the first iteration set the gradient to be propagated equal to the divergence.
+    #         # For the remaining iterations the gradient to be propagated can be retrieved from the
+    #         # self.gradient_buffer.get_param.
+    #         if i == 0: #the first iter
+    #             grad = divergence
+    #         else:
+    #             grad = self.gradient_buffer.get_param(operation.output)
+
+    #         # TODO: Execute the backward for the Operation
+    #         # NOTE: Make sure to unpack the inputs list if you aren't parsing a list in your backward.
+    #         grad_all_inputs = operation.backward_operation(grad, *operation.inputs)
+        
+    #         """
+    #         ?? not sure do i need this?
+    #         # If backward_operation returns a single gradient (not a tuple or list),
+    #         # convert it to a list for consistent handling
+    #         """
+    #         if not isinstance(grad_all_inputs, (list, tuple)):
+    #             grad_all_inputs = [grad_all_inputs]
+
+    #         # TODO: Loop through the inputs and their corresponding gradients.
+    #         for j, (input, grad_to_update) in enumerate(zip(operation.inputs, operation.gradients_to_update)):
+    #             grad = grad_all_inputs[j]
+
+    #             # Check with the Operation's gradients_to_update if you need to
+    #             if grad is not None:
+    #                 if grad_to_update is not None:
+    #                     operation.gradients_to_update[j] += grad
+    #                 # directly update a gradient, and do the following accordingly:
+    #                 else:
+    #                     #   1) Inputs with internally tracked gradients: update the gradient stored in
+    #                     #   self.gradient_buffer
+    #                     current_grad = self.gradient_buffer.get_param(input)
+    #                     if current_grad is None:
+    #                         self.gradient_buffer.update_param(input, grad)
+    #                     #   2) Inputs with externally tracked gradients: update gradients_to_update
+    #                     # NOTE: Make sure the order of gradients align with the order of inputs
+    #                     else:
+    #                         # print("grad_test",grad)
+    #                         self.gradient_buffer.update_param(input, current_grad + grad)
     def backward(self, divergence):
-        """
-        The backpropagation through the self.operation_list with a given divergence.
-        This function should automatically update gradients of parameters by checking
-        the gradients_to_update. Read the write up for further explanation
-        Args:
-            - divergence: loss value (float/double/int/long)
-        Returns:
-            No return required
-        """
-        # TODO: Iterate through the self.operation_list and propagate the gradients.
-        # NOTE: Make sure you iterate in the correct direction. How are gradients propagated?
+        for i, operation in enumerate(reversed(self.operation_list)):
+            # 获取当前操作的梯度
+            if i == 0:  # 第一次迭代
+                grad = divergence
+            else:
+                grad = self.gradient_buffer.get_param(operation.output)
 
-        # TODO: For the first iteration set the gradient to be propagated equal to the divergence.
-        # For the remaining iterations the gradient to be propagated can be retrieved from the
-        # self.gradient_buffer.get_param.
-
-        # TODO: Execute the backward for the Operation
-        # NOTE: Make sure to unpack the inputs list if you aren't parsing a list in your backward.
-
-        # TODO: Loop through the inputs and their corresponding gradients.
-        # Check with the Operation's gradients_to_update if you need to
-        # directly update a gradient, and do the following accordingly:
-        #   1) Inputs with internally tracked gradients: update the gradient stored in
-        #   self.gradient_buffer
-        #   2) Inputs with externally tracked gradients: update gradients_to_update
-        # NOTE: Make sure the order of gradients align with the order of inputs
+            # 执行反向操作获取所有输入的梯度
+            grad_all_inputs = operation.backward_operation(grad, *operation.inputs)
+            
+            # 如果返回单个梯度而非列表，将其转换为列表
+            if not isinstance(grad_all_inputs, (list, tuple)):
+                grad_all_inputs = [grad_all_inputs]
+                
+            # 处理每个输入的梯度
+            for j, (input, grad_to_update) in enumerate(zip(operation.inputs, operation.gradients_to_update)):
+                # 获取当前输入的梯度
+                input_grad = grad_all_inputs[j]
+                
+                # 确保梯度不是None
+                if input_grad is not None:
+                    # 检查是否需要直接更新梯度
+                    if grad_to_update is not None:
+                        # 外部跟踪梯度（如权重）
+                        operation.gradients_to_update[j] += input_grad
+                    else:
+                        # 内部跟踪梯度（如层输入）
+                        current_grad = self.gradient_buffer.get_param(input)
+                        if current_grad is None:
+                            self.gradient_buffer.update_param(input, input_grad)
+                        else:
+                            self.gradient_buffer.update_param(input, current_grad + input_grad)
 
     def zero_grad(self):
         """

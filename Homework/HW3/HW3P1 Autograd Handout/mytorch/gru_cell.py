@@ -10,9 +10,13 @@ NOTE: You should have already implemented RNNCell.
 We can model GRUCell's as composable RNNCell's!
 A GRUCell transormation is given by: 
 
+Reset Gate:
 r = σ   (Wir xt + bir + Whr ht-1 + bhr)
+Update:
 z = σ   (Wiz xt + biz + Whz ht-1 + bhz)
+candidate activation cell:
 n = tanh(Win xt + bin + r * (Whn ht-1 + bhn))
+Hiddent State:
 ht = (1 - z) * n + z * h
 
 where,
@@ -23,6 +27,9 @@ Wir, bir, Whr, bhr  : Weights of the reset-gate cell
 Wiz, biz, Whz, bhz  : Weights of the update-gate cell
 Win, bin, Whn, bhn  : Weights of the candidate activation cell
 ht   : hidden state at timestep t
+
+MYNOTE:
+LSTM: Forget Gate, Input Gate, Cell State, Output Gate, a "complete" ver of GRU
 """
 
 
@@ -37,9 +44,9 @@ class GRUCell(object):
         # TODO: Initialize three RNNCells for the reset-gate, update-gate and candidate activation transformations
         # NOTE: Make sure you pass the Autograd Engine
         # NOTE: What activation functions would each RNNCell require?
-        self.r_cell = NotImplemented
-        self.z_cell = NotImplemented
-        self.n_cell = NotImplemented
+        self.r_cell = RNNCell(input_size, hidden_size, autograd_engine, act_fn=Sigmoid)
+        self.z_cell = RNNCell(input_size, hidden_size, autograd_engine, act_fn=Sigmoid)
+        self.n_cell = RNNCell(input_size, hidden_size, autograd_engine, act_fn=Tanh)
 
         # Init Gradients
         self.zero_grad()
@@ -95,14 +102,14 @@ class GRUCell(object):
         # NOTE: n = tanh(W_in x + b_in + r * (W_hn h + b_hn))
         # NOTE: Remember, You've modified RNNCell's to optionally scale the hidden linear affine transformation.
         #       This should come in handy for one of the transformations above.
-        self.r = NotImplemented
-        self.z = NotImplemented
-        self.n = NotImplemented
+        self.r = Sigmoid(self.r_cell(np.concatenate([x, h_prev_t])))
+        self.z = Sigmoid(self.z_cell(np.concatenate([x, h_prev_t])))
+        self.n = Tanh(self.n_cell(np.concatenate([x, h_prev_t]), scale_hidden=self.r))
 
         # TODO: Compute the final output given by: ht = (1 - z) * n + z * ht-1
         # NOTE: Break it down to primitive operations and add each operation
         # NOTE: AVOID IN-PLACE OPERATIONS!
-        h_t = NotImplemented
+        h_t = (1-self.z) * self.n + self.z * h_prev_t
 
         """DO NOT MODIFY"""
         assert self.x.shape == (self.input_size,)

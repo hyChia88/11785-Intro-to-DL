@@ -28,6 +28,9 @@ class Tanh:
     compute the derivative for that state instead of the "current" stored state
     which could be anything.
     """
+    def __call__(self, Z):
+        return self.forward(Z)
+        
     def forward(self, Z):
 
         self.A = Z

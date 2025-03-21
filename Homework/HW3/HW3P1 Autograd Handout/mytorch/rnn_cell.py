@@ -34,8 +34,18 @@ class RNNCell(object):
 
         # TODO: Init two Linear layers
         # NOTE: Make sure you pass the Autograd Engine
-        self.ih = NotImplemented
-        self.hh = NotImplemented
+        # Linear(in_feature, out_feature, autograd)
+        """
+        MYNOTE:
+        Step 1:
+        ih -> Wih * xt + bih
+        hh -> Whh * ht-1 + bhh
+        
+        Step 2:
+        act_fn(ih + hh), act_fn usually will be tanh
+        """
+        self.ih = Linear(input_size, hidden_size, autograd_engine)
+        self.hh = Linear(hidden_size, hidden_size, autograd_engine)
 
         """DO NOT MODIFY"""
         self.zero_grad()
@@ -76,25 +86,36 @@ class RNNCell(object):
         ht = act_fn(Wih xt + bih + Whh ht−1 + bhh)
         """
 
+        """
+        MYNOTE:
+        in class Linear,
+        def __call__(self, x):
+            return self.forward(x)
+        here __call__ is callled for self.ih(x) and do forward to do x@self.W.T + self.b, the linear transformation
+        """
         # TODO: Apply the Linear Transformation on the input features
-        input_transform = NotImplemented
+        input_transform = self.ih(x)
 
         # TODO: Apply the Linear Transformation on the hidden features
-        hidded_transform = NotImplemented
+        hidden_transform = self.hh(h_prev_t)
 
         # TODO: Multiply the hidden transformation with optional scale factor
         # NOTE: Remember to add any operations.
         # NOTE: Also remember np.ndarrays with the same views cannot be added to the gradient buffer.
         # NOTE: This is done to be able to later use RNNCell's to create GRUCells
         if scale_hidden is not None:
-            scale_hidden = NotImplemented
+            scaled_hidden = hidden_transform * scale_hidden
         else:
-            scale_hidden = NotImplemented
+            scaled_hidden = hidden_transform
 
         # TODO: Add the input Linear Transformation and the hidden Linear Transformation
-        total_transform = NotImplemented
+        total_transform = input_transform + scaled_hidden
 
         # TODO: Apply the activation function
-        h_t = NotImplemented
+        # MYNOTE: act usaully will be tanh
+        h_t = self.activation(total_transform)
 
-        raise NotImplementedError
+        return h_t
+    
+    # ?? Do we need to add backward() here? Ans Noneed, cuz we are using autograd here.
+    
